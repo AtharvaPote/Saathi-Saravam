@@ -25,6 +25,10 @@ Sites ChatGPT sign-in protects the private app. These credentials select demo wo
 
 No phone/IVR connection, outbound alerts, real food ordering, live weather or mandi feed, or soil-card file parsing. Market/weather examples are visibly illustrative. Soil values may be entered in chat. Farm guidance is general and does not substitute for a local agronomist. Bills are simple demo sale records, not GST-compliant invoices. This is not a production multi-tenant authentication system.
 
+## Coming up
+
+Invoice management, GST billing and tax summaries, plus incoming and outgoing phone calls. These are visibly marked as planned features on both dashboards and in Help. Current speech works within the app; no telephone calls are placed or received.
+
 ## Development
 
 - Node >=22.13.
