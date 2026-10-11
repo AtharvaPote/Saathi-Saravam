@@ -1,0 +1,73 @@
+import assert from 'node:assert/strict';
+import { client } from './http-client.mjs';
+
+// The shared helper is deliberately pinned to localhost. Never run these mutations
+// against a hosted account; the local Sites mock owner is checked before writing.
+const c = client();
+assert.equal((await c.raw('/api/farm')).status, 401);
+await c.raw('/signin-with-chatgpt?return_to=/');
+assert.equal((await c.request('/api/desk')).owner, 'Seedy', 'Farm integration requires the local Sites mock account');
+await c.login('farm');
+const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+const unique = `QA farm ${Date.now()} ${crypto.randomUUID().slice(0, 6)}`;
+const crop = { type: 'farm_crop', plot: unique, crop: 'Onion', variety: 'Red', area: 2, areaUnit: 'acres', sownOn: date, location: 'Nashik', stage: 'growing' };
+let d = await c.request('/api/actions');
+for (const name of ['read_farm', 'prepare_farm_crop', 'prepare_farm_expense']) assert.ok(d.tools.some(t => t.function.name === name));
+assert.ok(d.confirmationRequired);
+const before = await c.request('/api/farm');
+const requestId = crypto.randomUUID();
+d = await c.request('/api/actions', { requestId, action: crop });
+assert.equal(d.status, 'pending'); assert.ok(!d.state.farmCrops.some(row => row.plot === unique));
+const cropProposal = d.proposal.id;
+assert.equal((await c.request('/api/actions', { requestId, action: crop })).proposal.id, cropProposal);
+assert.ok((await c.request(`/api/actions/${cropProposal}`)).proposal.review.lines.length);
+await Promise.all([c.request(`/api/actions/${cropProposal}`, { decision: 'confirm' }), c.request(`/api/actions/${cropProposal}`, { decision: 'confirm' })]);
+d = await c.request('/api/farm');
+const savedCrop = d.crops.find(row => row.plot === unique);
+assert.ok(savedCrop); assert.equal(d.crops.filter(row => row.plot === unique).length, 1);
+console.log('PASS farm authentication, native tool catalog, no premature crop write and concurrent idempotency');
+
+assert.equal((await c.raw('/api/actions', { action: { ...crop, plot: `  ${unique.toUpperCase()}  `, crop: 'ONION' } })).status, 400);
+assert.equal((await c.raw('/api/actions', { action: { ...crop, id: savedCrop.id, crop: 'Wheat' } })).status, 400);
+assert.equal((await c.raw('/api/actions', { action: { ...crop, id: 'missing-crop' } })).status, 400);
+assert.equal((await c.raw('/api/actions', { action: { type: 'farm_expense', cropId: 'missing-crop', amount: 20, category: 'seeds', date } })).status, 400);
+const expense = { type: 'farm_expense', cropId: savedCrop.id, category: 'seeds', amount: 123.45, date, note: unique };
+d = await c.request('/api/actions', { action: expense });
+assert.equal(d.status, 'pending'); assert.ok(!d.state.farmExpenses.some(row => row.note === unique));
+await c.request(`/api/actions/${d.proposal.id}`, { decision: 'cancel' });
+await c.request(`/api/actions/${d.proposal.id}`, { decision: 'confirm' });
+assert.ok(!(await c.request('/api/farm')).expenses.some(row => row.note === unique));
+d = await c.request('/api/actions', { action: expense });
+await Promise.all([c.request(`/api/actions/${d.proposal.id}`, { decision: 'confirm' }), c.request(`/api/actions/${d.proposal.id}`, { decision: 'confirm' })]);
+let farm = await c.request('/api/farm');
+assert.equal(farm.expenses.filter(row => row.note === unique).length, 1);
+assert.equal(farm.expenses.find(row => row.note === unique).cropId, savedCrop.id);
+assert.equal(Math.round((farm.summary.totalExpenses - before.summary.totalExpenses) * 100), 12345);
+assert.equal(farm.summary.expensesByCrop[savedCrop.id], 123.45);
+console.log('PASS duplicate and missing crop validation, expense cancellation, exact totals and crop association');
+
+const taskTitle = `${unique} irrigation`;
+d = await c.request('/api/actions', { action: { type: 'task', title: taskTitle, date, cropId: savedCrop.id } });
+assert.ok(!d.state.tasks.some(t => t.title === taskTitle));
+await c.request(`/api/actions/${d.proposal.id}`, { decision: 'confirm' });
+const task = (await c.request('/api/farm')).tasks.find(t => t.title === taskTitle);
+assert.ok(task); assert.equal(task.cropId, savedCrop.id); assert.equal(task.done, false);
+d = await c.request('/api/desk', { op: 'task-done', id: task.id });
+assert.equal(d.status, 'pending'); assert.equal(d.state.tasks.find(t => t.id === task.id).done, false);
+assert.equal((await c.request('/api/farm')).tasks.find(t => t.id === task.id).done, false);
+await c.request(`/api/actions/${d.proposal.id}`, { decision: 'confirm' });
+assert.equal((await c.request('/api/farm')).tasks.find(t => t.id === task.id).done, true);
+d = await c.request('/api/actions', { action: { type: 'task_status', id: task.id, done: false } });
+await c.request(`/api/actions/${d.proposal.id}`, { decision: 'confirm' });
+assert.equal((await c.request('/api/farm')).tasks.find(t => t.id === task.id).done, false);
+console.log('PASS linked dated task persistence and review-required completion/reopening, including legacy desk endpoint');
+
+assert.equal((await c.raw('/api/inventory')).status, 403);
+assert.equal((await c.raw('/api/actions', { action: { type: 'inventory', item: 'Rice', quantity: 1, unit: 'kg', mode: 'add' } })).status, 400);
+await c.login('shop');
+assert.equal((await c.raw('/api/farm')).status, 403);
+assert.equal((await c.raw(`/api/actions/${cropProposal}`)).status, 404);
+for (const action of [crop, expense, { type: 'task', title: taskTitle, date, cropId: savedCrop.id }]) assert.equal((await c.raw('/api/actions', { action })).status, 400);
+d = await c.request('/api/actions');
+for (const name of ['read_farm', 'prepare_farm_crop', 'prepare_farm_expense']) assert.ok(!d.tools.some(t => t.function.name === name));
+console.log('PASS farmer/shop API and tool ownership boundaries');

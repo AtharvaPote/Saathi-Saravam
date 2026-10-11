@@ -19,13 +19,17 @@ Sites ChatGPT sign-in protects the private app. These credentials select demo wo
 - Inventory receipts with add-versus-set semantics, missing pack-size questions, saved carton/box conversions, optional initial prices and before/after review.
 - Shared action APIs and native Sarvam 105B function calling for voice and manual entry; see [the API contract](docs/actions.md).
 - Udhaar, payments, simple single-item bills with stock decrement, appointment booking with slot collision checks, and farm tasks.
+- Farmer notebook: crop seasons with plot, area, location, sowing date and stage; paid expenses with per-crop totals; dated crop-linked tasks with overdue and completion views. New farmer panels and prompts support English, Hindi and Marathi. All changes, including task completion, are reviewed before saving.
+- Farmer voice and text use native tools to prepare crops, expenses and tasks. Saved crop details inform general guidance; read-only farm APIs expose recorded totals. Existing accounts start with empty crop/expense lists, preserving their tasks.
 - Saved activity, completion progress, and JSON record export.
 - Concurrent writes use version-based compare-and-swap. Confirmations are idempotent for retained proposals; changed records require a fresh review. See the API contract for retention limits.
 - Voice/chat processing sends the current conversation and relevant demo records to Sarvam to interpret requests. Provider timeouts and errors are visible. Microphone tracks stop on completion or dismissal. No audio recordings are stored by this app; Sarvam receives the audio for processing. Transcripts and chat are saved.
 
 ## Deliberate draft limits
 
-No phone/IVR connection, outbound alerts, real food ordering, live weather or mandi feed, or soil-card file parsing. Market/weather examples are visibly illustrative. Soil values may be entered in chat. Farm guidance is general and does not substitute for a local agronomist. Bills are simple demo sale records, not GST-compliant invoices. This is not a production multi-tenant authentication system.
+No phone/IVR connection, outbound alerts, real food ordering, live weather or mandi feed, or soil-card file parsing. Soil values may be entered in chat. Farm guidance is general and does not substitute for a local agronomist. Bills are simple demo sale records, not GST-compliant invoices. This is not a production multi-tenant authentication system.
+
+The farmer dashboard uses saved records rather than fictional weather or prices. Expense totals cover recorded payments only, not complete production cost or profit. Tasks stay in the app and do not send reminders. Crop identity (crop, plot, sowing date) is fixed after creation so linked costs remain attached to the same season; add a new record for the next season. Stage, area, location and variety can be updated after review.
 
 ## Coming up
 
@@ -36,7 +40,9 @@ Invoice management, GST billing and tax summaries, plus incoming and outgoing ph
 - Node >=22.13.
 - Install via the Sites plugin `install-dependencies.mjs` helper, then `npm run dev`.
 - Local sign-in: `/signin-with-chatgpt?return_to=/` (starter's loopback-only mock; omitted from production).
-- `node --test tests/domain.test.mjs` verifies stock, ledger and booking integrity.
+- `node --test tests/*.test.mjs` verifies stock, ledger, crop/expense/task integrity and the Gemma protocol.
+- `node tests/farm-integration.mjs` checks farmer APIs, profile isolation, reviews and persistence against the local preview with synthetic records.
+- `node scripts/test-farm-with-secret.mjs` accepts a Sarvam key through hidden stdin and tests five native-tool conversations against synthetic in-memory farmer records; it does not use the workspace database.
 - `npx tsc --noEmit` checks TypeScript.
 - `npm run db:generate` after schema changes; apply generated migrations locally using the starter's Wrangler command. Sites applies hosted migrations during publication.
 - Build with the Sites `build-site.mjs` helper. Keep its `sites()` Vite integration.

@@ -9,6 +9,7 @@ All endpoints require the existing Sites ChatGPT session and a selected shop/far
 | `GET /api/actions` | Allowed actions, JSON argument schemas, Sarvam function tools and endpoint catalog |
 | `GET /api/desk` | Current workspace records, conversation, incomplete inventory draft |
 | `GET /api/inventory?q=Maggi` | Filter stock, packaging and prices (shop only) |
+| `GET /api/farm` | Crop seasons, paid expenses, tasks and recorded totals (farmer only) |
 | `POST /api/actions` | Validate an action and prepare a review or a missing-field question; never commits records |
 | `GET /api/actions/{proposalId}` | Retrieve a prepared review in this workspace |
 | `POST /api/actions/{proposalId}` | `{ "decision": "confirm" }` or `{ "decision": "cancel" }` |
@@ -62,11 +63,13 @@ Next time, 2 cartons automatically resolves to 48 more packs. If KitKat is alrea
 - `credit`: customer, amount, optional note. Adds to outstanding udhaar.
 - `payment`: customer, amount. Subtracts from outstanding udhaar; cannot overpay.
 - `sale`: item, quantity in the saved base unit, customer. Uses saved price and reduces stock together.
-- `task`: title, date (`YYYY-MM-DD`).
+- `task`: title, date (`YYYY-MM-DD`), optional saved `cropId` (farmer only).
 - `task_status`: id, done.
+- `farm_crop`: plot, crop, area, areaUnit (`acres` or `hectares`), sownOn (`YYYY-MM-DD`), location, stage (`planned`, `growing` or `harvested`), optional variety. Omit id to add; use a saved id to edit. Crop, plot and sowing date stay fixed after creation. Growing/harvested crops cannot have future sowing dates. Duplicate normalized crop/plot/sowing-date records are rejected.
+- `farm_expense`: category (`seeds`, `fertiliser`, `labour`, `irrigation`, `equipment`, `transport` or `other`), amount in INR (positive, at most two decimal places), paid date (not future), optional saved cropId and note. Omitting cropId records a general farm cost. Amounts are paid costs, not budgets.
 - `appointment`: customer, service, date, time (`HH:mm`, India time).
 
-The farmer demo exposes task actions only. GST, invoices, phone calls and live agriculture feeds remain planned features and have no action tools yet.
+The farmer demo exposes crop, expense and task actions plus `read_farm`. Shop workspaces cannot create farm records or link tasks to crops. Farm workspaces cannot mutate shop inventory, sales or credit balances. Missing crop IDs fail validation; old workspaces without crop/expense arrays load as empty without losing tasks. GST, invoices, phone calls and live agriculture feeds remain planned features and have no action tools yet.
 
 ## Model and confirmation boundaries
 
@@ -76,9 +79,9 @@ The user can tap Confirm & save or say an explicit phrase such as “confirm”.
 
 Only one proposal is active at a time. A new proposal supersedes older pending ones. Repeated confirmation is idempotent while that proposal is retained. Optional request IDs (8–100 characters) make duplicate preparations return the original proposal within the retained conversation; reuse an ID only for retries of the same request. The last 100 messages are retained, so clients should not rely on indefinite idempotency or retention of old reviews.
 
-If the relevant stock, price or ledger changes while a review is open, confirmation returns `status: "review_updated"` with new totals and saves nothing. Show the updated review and request confirmation again. Workspace writes use optimistic concurrency checks. Errors leave records unchanged.
+If the relevant stock, price, ledger, crop or recorded expense total changes while a review is open, confirmation returns `status: "review_updated"` with new totals and saves nothing. Show the updated review and request confirmation again. Workspace writes use optimistic concurrency checks. Errors leave records unchanged.
 
-An explicit manual task checkbox is a direct user action and remains available through the legacy `task-done` operation. All model-requested changes require a review.
+The legacy `task-done` operation now prepares a `task_status` review and does not toggle immediately. Confirm it through the action endpoint, just like the farmer task buttons. Crop edits, linked-task proposals and expenses also track relevant records for review invalidation. Expenses are summarized as recorded costs only; there is no implied live data or profit calculation.
 
 ## Testing
 

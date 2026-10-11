@@ -1,7 +1,7 @@
 import { env } from 'cloudflare:workers';
 import { cookies } from 'next/headers';
 import { getChatGPTUser } from '../chatgpt-auth';
-import { seed, type Profile, type State } from './domain';
+import { seed, upgradeState, type Profile, type State } from './domain';
 export class AppError extends Error { constructor(message: string, public status=400){super(message);} }
 export async function identity(requireProfile=true) {
  const user=await getChatGPTUser();
@@ -21,7 +21,7 @@ export async function readState(key:string,profile:Profile) {
  await env.DB.prepare('INSERT OR IGNORE INTO workspaces (id,data,version) VALUES (?,?,0)').bind(key,JSON.stringify(seed(profile))).run();
  const row=await env.DB.prepare('SELECT data,version FROM workspaces WHERE id=?').bind(key).first<{data:string;version:number}>();
  if(!row)throw new AppError('Workspace unavailable.',503);
- return {state:JSON.parse(row.data) as State,version:row.version};
+ return {state:upgradeState(JSON.parse(row.data) as State),version:row.version};
 }
 export async function mutate(key:string,profile:Profile,fn:(s:State)=>void) {
  for(let i=0;i<4;i++){

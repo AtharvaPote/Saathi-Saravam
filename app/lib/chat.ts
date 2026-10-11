@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { chatMessages } from './chat-prompt';
 import { modelCompletion } from './model';
-import { profiles, today, describe, prepareMessage, spokenDecision, normalizeName, type Message } from './domain';
+import { profiles, today, describe, prepareMessage, spokenDecision, normalizeName, farmSummary, type Message } from './domain';
 import { toolsFor, actionFromTool } from './action-registry';
 import { type Scope, decide, domainCall, actionResponse, requestId as validateRequestId } from './action-service';
 import { readState, mutate, quota, sarvam, AppError } from './server';
@@ -26,14 +26,20 @@ export async function chat(scope:Scope,body:unknown){
  for(let round=0;round<3;round++){
   modelMessage=await modelCompletion(messages,toolsFor(scope.profile),input.provider);
   const calls=modelMessage?.tool_calls;
-  if(!calls?.length||calls.some((c:any)=>c.function?.name!=='read_inventory'))break;
-  if(calls.length>3)throw new AppError('Please ask for one inventory lookup at a time.');
+  if(!calls?.length||calls.some((c:any)=>!['read_inventory','read_farm'].includes(c.function?.name)))break;
+  if(calls.length>3)throw new AppError('Please ask for one record lookup at a time.');
   messages.push(modelMessage);
-  for(const c of calls){let args;try{args=JSON.parse(c.function.arguments);}catch{throw new AppError('Saathi could not read that request. Please try again.',502);}const query=normalizeName(typeof args.query==='string'?args.query:'');messages.push({role:'tool',tool_call_id:c.id,content:JSON.stringify({items:context.inventory.filter(i=>normalizeName(i.item).includes(query))})});}
+  for(const c of calls){
+   const expected=scope.profile==='farm'?'read_farm':'read_inventory';if(c.function.name!==expected)throw new AppError('That record lookup is unavailable in this workspace.');
+   let args;try{args=JSON.parse(c.function.arguments);}catch{throw new AppError('Saathi could not read that request. Please try again.',502);}
+   const query=normalizeName(typeof args?.query==='string'?args.query:'');
+   const records=scope.profile==='farm'?{crops:context.farmCrops||[],expenses:context.farmExpenses||[],tasks:context.tasks,summary:farmSummary(context)}:{items:context.inventory.filter(i=>normalizeName(i.item).includes(query))};
+   messages.push({role:'tool',tool_call_id:c.id,content:JSON.stringify(records)});
+  }
  }
  const calls=modelMessage?.tool_calls||[];let action:unknown;
  if(calls.length){
-  if(calls.length!==1||calls[0].function?.name==='read_inventory')throw new AppError('Please ask for one change at a time so you can review it clearly.');
+  if(calls.length!==1||['read_inventory','read_farm'].includes(calls[0].function?.name))throw new AppError('Please ask for one change at a time so you can review it clearly.');
   let args;try{args=JSON.parse(calls[0].function.arguments);}catch{throw new AppError('Saathi could not format that action. Please repeat it.',502);}
   action=domainCall(()=>actionFromTool(calls[0].function.name,args,scope.profile,context,input.text));
  }

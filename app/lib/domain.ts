@@ -11,6 +11,10 @@ const amount = z.number().finite().positive().max(1000000);
 const price = z.number().finite().min(0).max(100000);
 const quantity = z.number().finite().min(0).max(1000000);
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v=>!isNaN(Date.parse(v))&&new Date(v).toISOString().slice(0,10)===v,'Use a valid date');
+export const farmStageSchema=z.enum(['planned','growing','harvested']);
+export const farmCategorySchema=z.enum(['seeds','fertiliser','labour','irrigation','equipment','transport','other']);
+const farmAmount=amount.refine(n=>Math.abs(n*100-Math.round(n*100))<0.000001,'Use at most two decimal places');
+const farmArea=z.number().finite().positive().max(100000).refine(n=>Math.abs(n*10000-Math.round(n*10000))<0.000001,'Use at most four decimal places');
 // Partial stock requests are allowed only at the planning boundary.
 export const stockRequestSchema = z.object({
  type:z.literal('inventory'),mode:z.enum(['add','set']).default('add'),item:name,
@@ -25,19 +29,24 @@ export const actionSchema = z.discriminatedUnion('type', [
  z.object({type:z.literal('credit'),customer:name,amount,note:z.string().max(200).default('')}).strict(),
  z.object({type:z.literal('payment'),customer:name,amount}).strict(),
  z.object({type:z.literal('sale'),item:name,quantity:quantity.refine(n=>n>0),customer:name}).strict(),
- z.object({type:z.literal('task'),title:name,date}).strict(),
+ z.object({type:z.literal('task'),title:name,date,cropId:name.optional()}).strict(),
  z.object({type:z.literal('task_status'),id:name,done:z.boolean()}).strict(),
+ z.object({type:z.literal('farm_crop'),id:name.optional(),plot:name,crop:name,variety:z.string().trim().max(100).default(''),area:farmArea,areaUnit:z.enum(['acres','hectares']),sownOn:date,location:name,stage:farmStageSchema}).strict(),
+ z.object({type:z.literal('farm_expense'),cropId:name.optional(),category:farmCategorySchema,amount:farmAmount,date,note:z.string().trim().max(200).default('')}).strict(),
  z.object({type:z.literal('appointment'),customer:name,service:name,date,time:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)}).strict(),
 ]);
 export type Action=z.infer<typeof actionSchema>;
 export type InventoryItem={item:string;quantity:number;unit:Unit;price:number|null;packaging?:{unit:Unit;unitsPerPack:number}[]};
+export type FarmCrop={id:string;plot:string;crop:string;variety:string;area:number;areaUnit:'acres'|'hectares';sownOn:string;location:string;stage:z.infer<typeof farmStageSchema>};
+export type FarmExpense={id:string;cropId?:string;category:z.infer<typeof farmCategorySchema>;amount:number;date:string;note:string};
 export type Review={basis:string;summary:string;lines:{label:string;value:string}[]};
 export type Message={id:string;role:'user'|'assistant';text:string;at:string;action?:Action;review?:Review;status?:'pending'|'saved'|'cancelled';requestId?:string;draftId?:string};
 export type State={
  inventory:InventoryItem[];
  credits:{customer:string;amount:number;note:string}[];
  sales:{id:string;item:string;quantity:number;total:number;customer:string;at:string}[];
- tasks:{id:string;title:string;date:string;done:boolean}[];
+ tasks:{id:string;title:string;date:string;done:boolean;cropId?:string}[];
+ farmCrops?:FarmCrop[];farmExpenses?:FarmExpense[];
  appointments:{id:string;customer:string;service:string;date:string;time:string}[];
  messages:Message[];activity:{id:string;text:string;at:string}[];usage:{start:number;count:number};
  inventoryDraft?:{id:string;request:StockRequest;question:string;missing:string[];updatedAt:string};
@@ -46,8 +55,15 @@ export const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',
 export const normalizeName=(v:string)=>v.normalize('NFKC').trim().replace(/\s+/g,' ').toLowerCase();
 export const findItem=(s:State,item:string)=>s.inventory.find(i=>normalizeName(i.item)===normalizeName(item));
 const rounded=(n:number)=>Math.round(n*10000)/10000;
+export const farmCropLabel=(crop:FarmCrop)=>`${crop.crop} · ${crop.plot} · ${crop.sownOn}`;
+export function farmSummary(s:State){
+ const crops=s.farmCrops||[],expenses=s.farmExpenses||[];const centsByCrop:Record<string,number>={};let total=0,general=0;
+ for(const e of expenses){const cents=Math.round(e.amount*100);total+=cents;if(e.cropId)centsByCrop[e.cropId]=(centsByCrop[e.cropId]||0)+cents;else general+=cents;}
+ return {totalExpenses:total/100,generalExpenses:general/100,expensesByCrop:Object.fromEntries(crops.map(c=>[c.id,(centsByCrop[c.id]||0)/100])),activeCrops:crops.filter(c=>c.stage!=='harvested').length,overdueTasks:s.tasks.filter(t=>!t.done&&t.date<today()).length};
+}
+export function upgradeState(s:State):State{return {...s,farmCrops:s.farmCrops||[],farmExpenses:s.farmExpenses||[]};}
 export function seed(profile:Profile):State{
- return {inventory:profile==='shop'?[{item:'Rice',quantity:45,unit:'kg',price:60},{item:'Wheat flour',quantity:30,unit:'kg',price:45},{item:'Sunflower oil',quantity:8,unit:'litres',price:140},{item:'Sugar',quantity:4,unit:'kg',price:42},{item:'Tea',quantity:18,unit:'packs',price:30}]:[],credits:profile==='shop'?[{customer:'Ravi',amount:450,note:'Groceries'},{customer:'Sunita',amount:280,note:'Monthly essentials'},{customer:'Amit',amount:120,note:'Tea and sugar'}]:[],sales:[],tasks:profile==='farm'?[{id:'seed-task',title:'Check soil moisture in the onion plot',date:today(),done:false}]:[],appointments:[],messages:[],activity:[],usage:{start:Date.now(),count:0}};
+ return {inventory:profile==='shop'?[{item:'Rice',quantity:45,unit:'kg',price:60},{item:'Wheat flour',quantity:30,unit:'kg',price:45},{item:'Sunflower oil',quantity:8,unit:'litres',price:140},{item:'Sugar',quantity:4,unit:'kg',price:42},{item:'Tea',quantity:18,unit:'packs',price:30}]:[],credits:profile==='shop'?[{customer:'Ravi',amount:450,note:'Groceries'},{customer:'Sunita',amount:280,note:'Monthly essentials'},{customer:'Amit',amount:120,note:'Tea and sugar'}]:[],sales:[],farmCrops:[],farmExpenses:[],tasks:profile==='farm'?[{id:'seed-task',title:'Check soil moisture in the onion plot',date:today(),done:false}]:[],appointments:[],messages:[],activity:[],usage:{start:Date.now(),count:0}};
 }
 export function describe(a:Action){
  if(a.type==='inventory')return `${a.mode==='add'?'Receive':'Set total to'} ${a.quantity} ${a.unit} of ${a.item}`;
@@ -57,6 +73,8 @@ export function describe(a:Action){
  if(a.type==='sale')return `Bill ${a.customer} for ${a.quantity} of ${a.item} at the saved price`;
  if(a.type==='task')return `${a.title} · ${a.date}`;
  if(a.type==='task_status')return a.done?'Complete farm task':'Reopen farm task';
+ if(a.type==='farm_crop')return `${a.id?'Update':'Add'} ${a.crop} · ${a.plot}`;
+ if(a.type==='farm_expense')return `Record ₹${a.amount} for ${a.category} · ${a.date}`;
  return `${a.service} for ${a.customer} · ${a.date} at ${a.time}`;
 }
 const counted=(unit:Unit)=>!['kg','litres'].includes(unit);
@@ -92,7 +110,8 @@ export function prepareStock(s:State,raw:unknown):{action?:Action;request:StockR
 }
 export function applyAction(s:State,raw:unknown,profile:Profile){
  const a=actionSchema.parse(raw);
- if(profile==='farm'&&!['task','task_status'].includes(a.type))throw new Error('Use the shop demo for business records.');
+ if(profile==='farm'&&!['task','task_status','farm_crop','farm_expense'].includes(a.type))throw new Error('Use the shop demo for business records.');
+ if(profile==='shop'&&(a.type==='farm_crop'||a.type==='farm_expense'||(a.type==='task'&&a.cropId)))throw new Error('Use the farmer demo for farm records.');
  if(a.type==='inventory'){
   const ready=prepareStock(s,a);if(!ready.action)throw new Error(ready.question);const stock=ready.action as Extract<Action,{type:'inventory'}>;
   const existing=findItem(s,stock.item);const factor=stock.unitsPerPack??1;const baseUnit=stock.baseUnit??stock.unit;
@@ -113,7 +132,23 @@ export function applyAction(s:State,raw:unknown,profile:Profile){
   if(counted(item.unit)&&!Number.isInteger(a.quantity))throw new Error(`Enter a whole number of ${item.unit}.`);
   if(item.quantity<a.quantity)throw new Error(`Only ${item.quantity} ${item.unit} of ${item.item} is available.`);
   item.quantity=rounded(item.quantity-a.quantity);s.sales.unshift({id:crypto.randomUUID(),...a,item:item.item,total:Math.round(item.price*a.quantity*100)/100,at:new Date().toISOString()});
- }else if(a.type==='task')s.tasks.unshift({id:crypto.randomUUID(),title:a.title,date:a.date,done:false});
+ }else if(a.type==='farm_crop'){
+  const crops=s.farmCrops||[],old=a.id?crops.find(c=>c.id===a.id):undefined;
+  if(a.id&&!old)throw new Error('Crop record not found. Choose a saved crop.');
+  if(a.stage!=='planned'&&a.sownOn>today())throw new Error('A growing or harvested crop cannot have a future sowing date.');
+  if(old&&(normalizeName(old.plot)!==normalizeName(a.plot)||normalizeName(old.crop)!==normalizeName(a.crop)||old.sownOn!==a.sownOn))throw new Error('Keep the saved crop, plot and sowing date. Add a new crop record for a different season.');
+  if(!old&&crops.some(c=>normalizeName(c.plot)===normalizeName(a.plot)&&normalizeName(c.crop)===normalizeName(a.crop)&&c.sownOn===a.sownOn))throw new Error('This crop and plot already have a record for that sowing date. Edit the saved record instead.');
+  const {type,id,...fields}=a;
+  if(old)Object.assign(old,fields,{crop:old.crop,plot:old.plot});else crops.unshift({id:crypto.randomUUID(),...fields});
+  s.farmCrops=crops;
+ }else if(a.type==='farm_expense'){
+  if(a.date>today())throw new Error('Record only expenses already paid. Use a farm task for a planned purchase.');
+  if(a.cropId&&!(s.farmCrops||[]).some(c=>c.id===a.cropId))throw new Error('Crop record not found. Choose a saved crop or a general farm expense.');
+  const {type,...fields}=a;s.farmExpenses=[{id:crypto.randomUUID(),...fields},...(s.farmExpenses||[])];
+ }else if(a.type==='task'){
+  if(a.cropId&&!(s.farmCrops||[]).some(c=>c.id===a.cropId))throw new Error('Crop record not found. Choose a saved crop.');
+  s.tasks.unshift({id:crypto.randomUUID(),title:a.title,date:a.date,done:false,...(a.cropId?{cropId:a.cropId}:{})});
+ }
  else if(a.type==='task_status'){const task=s.tasks.find(t=>t.id===a.id);if(!task)throw new Error('Task not found.');task.done=a.done;}
  else{
   if(s.appointments.some(x=>x.date===a.date&&x.time===a.time))throw new Error('This appointment slot is already booked. Choose another time.');s.appointments.unshift({id:crypto.randomUUID(),...a});
@@ -132,8 +167,20 @@ export function previewAction(s:State,a:Action,profile:Profile):Review{
   else lines.push({label:'Bill total',value:`₹${after.sales[0].total}`},{label:'Remaining stock',value:`${next.quantity} ${next.unit}`});
  }else if(a.type==='credit'||a.type==='payment'){
   const old=s.credits.find(c=>normalizeName(c.customer)===normalizeName(a.customer));const next=after.credits.find(c=>normalizeName(c.customer)===normalizeName(a.customer))!;relevant=old??null;lines.push({label:'Before',value:`₹${old?.amount||0}`},{label:'After confirmation',value:`₹${next.amount}`});
+ }else if(a.type==='farm_crop'){
+  const old=(s.farmCrops||[]).find(c=>c.id===a.id);relevant=old||(s.farmCrops||[]).filter(c=>normalizeName(c.plot)===normalizeName(a.plot)&&normalizeName(c.crop)===normalizeName(a.crop)&&c.sownOn===a.sownOn);
+  lines.push({label:'Crop / plot',value:`${a.crop} · ${a.plot}`},{label:'Location',value:a.location},{label:'Sowing date',value:a.sownOn},{label:'Area',value:`${a.area} ${a.areaUnit}`},{label:'Variety',value:a.variety||'Not recorded'});
+  if(old)lines.push({label:'Before',value:`${old.area} ${old.areaUnit} · ${old.stage}`});
+  lines.push({label:'After confirmation',value:`${a.area} ${a.areaUnit} · ${a.stage}`});
+ }else if(a.type==='farm_expense'){
+  const crop=(s.farmCrops||[]).find(c=>c.id===a.cropId);const before=farmSummary(s),next=farmSummary(after);relevant={crop:crop||null,total:before.totalExpenses};
+  lines.push({label:'For',value:crop?farmCropLabel(crop):'General farm expense'},{label:'Category',value:a.category},{label:'Amount paid',value:`₹${a.amount}`},{label:'Date paid',value:a.date},{label:'Note',value:a.note||'—'},{label:'Recorded expenses before',value:`₹${before.totalExpenses}`},{label:'After confirmation',value:`₹${next.totalExpenses} recorded expenses`});
+ }else if(a.type==='task'){
+  const crop=(s.farmCrops||[]).find(c=>c.id===a.cropId);relevant=crop||null;lines.push({label:'Task',value:a.title},{label:'Due date',value:a.date},{label:'For',value:crop?farmCropLabel(crop):'General task'});
  }else if(a.type==='appointment')relevant=s.appointments.filter(x=>x.date===a.date&&x.time===a.time);
- else if(a.type==='task_status')relevant=s.tasks.find(t=>t.id===a.id);
+ else if(a.type==='task_status'){
+  const task=s.tasks.find(t=>t.id===a.id)!;relevant=task;lines.push({label:'Task',value:task.title},{label:'Due date',value:task.date},{label:'After confirmation',value:a.done?'Completed':'To do'});
+ }
  return {summary:describe(a),basis:JSON.stringify(relevant),lines};
 }
 const local=(lang:string,en:string,hi:string,mr:string)=>lang==='hi-IN'?hi:lang==='mr-IN'?mr:en;

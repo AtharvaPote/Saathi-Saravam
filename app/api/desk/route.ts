@@ -1,9 +1,9 @@
 import { chat } from '../../lib/chat';
-import { propose, decide, requestId, domainCall } from '../../lib/action-service';
+import { propose, decide, requestId } from '../../lib/action-service';
 import { cookies } from 'next/headers';
 import { env } from 'cloudflare:workers';
-import { applyAction, profiles, type Profile } from '../../lib/domain';
-import { identity, readState, mutate, checkOrigin, fail, AppError, json } from '../../lib/server';
+import { profiles, type Profile } from '../../lib/domain';
+import { identity, readState, checkOrigin, fail, AppError, json } from '../../lib/server';
 export async function GET(){try{
  const {user,profile,key}=await identity(false);
  return json({signedIn:true,profile,account:profile?profiles[profile]:null,state:profile?(await readState(key,profile)).state:null,voiceConfigured:!!(env as any).SARVAM_API_KEY,owner:user.displayName});
@@ -24,7 +24,8 @@ export async function POST(req:Request){try{
  if(b.op==='propose')return json(await propose({profile,key},b.action,b.language,requestId(b.requestId)));
  if(b.op==='confirm'||b.op==='cancel')return json(await decide({profile,key},b.id,b.op));
  if(b.op==='task-done'){
-  const state=await mutate(key,profile,s=>{const t=s.tasks.find(t=>t.id===b.id);if(!t)throw new AppError('Task not found.');domainCall(()=>applyAction(s,{type:'task_status',id:t.id,done:!t.done},profile));});return json({state});
+  const {state}=await readState(key,profile);const t=state.tasks.find(t=>t.id===b.id);if(!t)throw new AppError('Task not found.');
+  return json(await propose({profile,key},{type:'task_status',id:t.id,done:!t.done},b.language,requestId(b.requestId)));
  }
  if(b.op==='chat')return json(await chat({profile,key},b));
  throw new AppError('Unknown action.');
