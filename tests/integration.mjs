@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+const base='http://127.0.0.1:5173';let cookies=new Map();
+async function request(path,body){const r=await fetch(base+path,{method:body?'POST':'GET',redirect:'manual',headers:{cookie:[...cookies].map(([k,v])=>`${k}=${v}`).join('; '),...(body?{'Content-Type':'application/json',origin:base}:{})},body:body?JSON.stringify(body):undefined});for(const c of r.headers.getSetCookie()){const kv=c.split(';')[0],i=kv.indexOf('=');cookies.set(kv.slice(0,i),kv.slice(i+1));}return r;}
+let r=await request('/api/desk');assert.equal(r.status,401);console.log('PASS unauthenticated records are protected');
+await request('/signin-with-chatgpt?return_to=/');
+r=await request('/api/desk',{op:'login',email:'shop@saathi.demo',password:'wrong'});assert.equal(r.status,401);
+r=await request('/api/desk',{op:'login',email:'shop@saathi.demo',password:'Saathi@123'});assert.equal(r.status,200);
+let data=await (await request('/api/desk')).json();assert.equal(data.profile,'shop');const before=data.state.inventory[0].quantity;
+r=await request('/api/desk',{op:'propose',action:{type:'sale',item:'Rice',quantity:1,customer:'QA test'}});assert.equal(r.status,200);data=await r.json();assert.equal(data.state.inventory[0].quantity,before);const id=data.state.messages.at(-1).id;
+console.log('PASS a proposed bill does not change stock');
+const confirmations=await Promise.all([request('/api/desk',{op:'confirm',id}),request('/api/desk',{op:'confirm',id})]);for(const c of confirmations)assert.equal(c.status,200);
+data=await (await request('/api/desk')).json();assert.equal(data.state.inventory[0].quantity,before-1);console.log('PASS concurrent confirmations save the bill exactly once');
+r=await request('/api/desk',{op:'propose',action:{type:'credit',customer:'QA test',amount:200,note:'cancel check'}});data=await r.json();await request('/api/desk',{op:'cancel',id:data.state.messages.at(-1).id});data=await (await request('/api/desk')).json();assert.ok(!data.state.credits.some(c=>c.customer==='QA test'));console.log('PASS cancellation leaves balances untouched');
+await request('/api/desk',{op:'logout'});await request('/api/desk',{op:'login',email:'farmer@saathi.demo',password:'Saathi@123'});data=await (await request('/api/desk')).json();assert.equal(data.profile,'farm');assert.equal(data.state.inventory.length,0);assert.equal(data.state.sales.length,0);console.log('PASS farmer and shop records are isolated');
+r=await request('/api/desk',{op:'propose',action:{type:'task',title:'QA field check',date:'2026-10-12'}});data=await r.json();await request('/api/desk',{op:'confirm',id:data.state.messages.at(-1).id});data=await (await request('/api/desk')).json();const task=data.state.tasks.find(t=>t.title==='QA field check');assert.ok(task);await request('/api/desk',{op:'task-done',id:task.id});data=await (await request('/api/desk')).json();assert.ok(data.state.tasks.find(t=>t.id===task.id).done);console.log('PASS task completion persists across reloads');
+r=await fetch(base+'/api/desk',{method:'POST',headers:{'Content-Type':'application/json',origin:'https://unrelated.example',cookie:[...cookies].map(([k,v])=>`${k}=${v}`).join('; ')},body:JSON.stringify({op:'logout'})});assert.equal(r.status,403);console.log('PASS cross-origin mutation is rejected');
