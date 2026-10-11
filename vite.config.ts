@@ -71,7 +71,7 @@ export default defineConfig(async ({ command }) => {
           ...localBindingConfig,
           ...(command === "serve"
             ? {
-                vars: process.env.SARVAM_API_KEY ? { SARVAM_API_KEY: process.env.SARVAM_API_KEY } : {},
+                vars: { ...(process.env.SARVAM_API_KEY ? { SARVAM_API_KEY: process.env.SARVAM_API_KEY } : {}), ...(process.env.GEMINI_API_KEY ? { GEMINI_API_KEY: process.env.GEMINI_API_KEY } : {}) },
                 services: [
                   {
                     binding: "CONNECTORS",

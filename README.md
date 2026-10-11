@@ -16,10 +16,12 @@ Sites ChatGPT sign-in protects the private app. These credentials select demo wo
 - Push-to-talk (up to 25 seconds) → Sarvam transcription → contextual chat → spoken reply. Text entry and replay are also available.
 - English, Hindi and Marathi voice and primary navigation.
 - Review and confirm each proposed record mutation, including model proposals.
-- Inventory, udhaar, payments, simple single-item bills with stock decrement, appointment booking with slot collision checks, and farm tasks.
+- Inventory receipts with add-versus-set semantics, missing pack-size questions, saved carton/box conversions, optional initial prices and before/after review.
+- Shared action APIs and native Sarvam 105B function calling for voice and manual entry; see [the API contract](docs/actions.md).
+- Udhaar, payments, simple single-item bills with stock decrement, appointment booking with slot collision checks, and farm tasks.
 - Saved activity, completion progress, and JSON record export.
-- Concurrent writes use version-based compare-and-swap. Confirmations are idempotent.
-- Provider timeouts and errors are visible. Microphone tracks stop on completion or dismissal. No audio recordings are stored by this app; Sarvam receives the audio for processing. Transcripts and chat are saved.
+- Concurrent writes use version-based compare-and-swap. Confirmations are idempotent for retained proposals; changed records require a fresh review. See the API contract for retention limits.
+- Voice/chat processing sends the current conversation and relevant demo records to Sarvam to interpret requests. Provider timeouts and errors are visible. Microphone tracks stop on completion or dismissal. No audio recordings are stored by this app; Sarvam receives the audio for processing. Transcripts and chat are saved.
 
 ## Deliberate draft limits
 
@@ -46,3 +48,11 @@ Invoice management, GST billing and tax summaries, plus incoming and outgoing ph
 - https://docs.sarvam.ai/api-reference/speech-to-text/transcribe
 - https://docs.sarvam.ai/api-reference/chat/chat-completions-v1
 - https://docs.sarvam.ai/api-reference/text-to-speech/convert
+
+## Five ready-made voice demos
+
+Open **Open voice demos** from the shop overview. Each sample has **Try as text** and **Try as voice** paths, a downloadable real Bulbul recording, the recognized words, and a structured action review. The voice path uploads the WAV to the same speech-to-text endpoint used by microphone input. Confirmations affect only that isolated test case. Re-running a case resets its synthetic fixture; normal shop records stay unchanged.
+
+Samples cover a new Maggi carton receipt, a pack-size follow-up, more existing KitKat boxes, Hindi Tea receipt, and a stock-total correction. Audio provenance is in `public/voice-samples/manifest.json`; latest automated results are in `public/voice-samples/results.json`. Run `node tests/voice-samples.mjs` against the local secret-enabled preview. Test results demonstrate these fixtures, not general production accuracy.
+
+Hosted **Gemma 4** reasoning is prepared as an optional comparison backend; see [setup and verification limits](docs/gemma.md). It requires a separate server-side `GEMINI_API_KEY`. Sarvam remains the working default and handles speech for either backend. No live Gemma call has been made without that key.

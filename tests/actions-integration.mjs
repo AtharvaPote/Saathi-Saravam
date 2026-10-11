@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';import {client} from './http-client.mjs';
+const c=client();assert.equal((await c.raw('/api/actions')).status,401);assert.equal((await c.raw('/api/inventory')).status,401);await c.login();
+let d=await c.request('/api/actions');assert.ok(d.confirmationRequired);assert.ok(d.tools.some(t=>t.function.name==='prepare_inventory'));assert.ok(!d.tools.some(t=>t.function.name.includes('confirm')));
+const item=`API test ${Date.now()}`;const requestId=crypto.randomUUID();
+d=await c.request('/api/actions',{requestId,action:{type:'inventory',mode:'add',item,quantity:10,unit:'cartons'}});assert.equal(d.status,'needs_input');assert.ok(!d.state.inventory.find(i=>i.item===item));
+let repeat=await c.request('/api/actions',{requestId,action:{type:'inventory',mode:'add',item,quantity:10,unit:'cartons'}});assert.equal(d.proposal.id,repeat.proposal.id);
+const draftId=d.draftId;d=await c.request('/api/desk');assert.equal(d.state.inventoryDraft.id,draftId);
+d=await c.request('/api/actions',{action:{type:'inventory',mode:'add',item,draftId,baseUnit:'packs',unitsPerPack:24}});assert.equal(d.status,'pending');assert.equal(d.proposal.action.quantity,10);assert.ok(!d.state.inventory.find(i=>i.item===item));
+const id=d.proposal.id;const review=await c.request(`/api/actions/${id}`);assert.equal(review.proposal.review.lines.find(l=>l.label==='After confirmation').value,'240 packs');
+await Promise.all([c.request(`/api/actions/${id}`,{decision:'confirm'}),c.request(`/api/actions/${id}`,{decision:'confirm'})]);
+d=await c.request(`/api/inventory?q=${encodeURIComponent(item)}`);assert.equal(d.items[0].quantity,240);assert.equal(d.items[0].price,null);console.log('PASS action catalog, durable draft, explicit review, concurrent idempotent confirmation and inventory API');
+d=await c.request('/api/actions',{action:{type:'inventory',mode:'add',item,quantity:2,unit:'cartons'}});assert.equal(d.proposal.action.unitsPerPack,24);await c.request(`/api/actions/${d.proposal.id}`,{decision:'cancel'});d=await c.request(`/api/inventory?q=${encodeURIComponent(item)}`);assert.equal(d.items[0].quantity,240);
+assert.equal((await c.raw('/api/actions',{action:{type:'sale',item,quantity:1,customer:'QA'}})).status,400);
+d=await c.request('/api/actions',{action:{type:'price',item,price:15}});await c.request(`/api/actions/${d.proposal.id}`,{decision:'confirm'});d=await c.request('/api/actions',{action:{type:'sale',item,quantity:2,customer:'QA'}});assert.equal(d.proposal.review.lines.find(l=>l.label==='Bill total').value,'₹30');await c.request(`/api/actions/${d.proposal.id}`,{decision:'cancel'});console.log('PASS packaging reuse, cancellation and price-before-billing');
+await c.login('farm');assert.equal((await c.raw('/api/inventory')).status,403);assert.equal((await c.raw(`/api/actions/${id}`)).status,404);assert.equal((await c.raw('/api/actions',{action:{type:'inventory',mode:'add',item,quantity:1,unit:'packs'}})).status,400);d=await c.request('/api/actions');assert.ok(!d.tools.some(t=>t.function.name==='prepare_inventory'));console.log('PASS APIs enforce shop/farm ownership and allowed operations');

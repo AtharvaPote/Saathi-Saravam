@@ -1,0 +1,8 @@
+export const voiceSamples=[
+ {id:'new-cartons',title:'A new item arrives',language:'en-IN',prompt:'I just acquired ten cartons of Maggi. Add them to my inventory.',context:'Maggi is a new item. The pack size is unknown.',expected:'Ask how many packs are in one carton. Save nothing.',file:'/voice-samples/01-new-cartons.wav'},
+ {id:'pack-size',title:'Answer the pack-size question',language:'en-IN',prompt:'Each carton contains twenty four packs.',context:'You just received 10 cartons of Maggi. Saathi is waiting for the pack size.',expected:'Review 10 × 24 = 240 packs. Wait for confirmation.',file:'/voice-samples/02-pack-size.wav'},
+ {id:'existing-boxes',title:'More of an existing item',language:'en-IN',prompt:'I bought five more boxes of KitKat. Add them to the existing stock.',context:'KitKat already has 5 boxes in stock.',expected:'Review 5 + 5 = 10 boxes. Preserve the saved price.',file:'/voice-samples/03-existing-boxes.wav'},
+ {id:'hindi-receipt',title:'Receive stock in Hindi',language:'hi-IN',prompt:'चाय के दो पैकेट और आए हैं। इन्हें स्टॉक में जोड़ दो।',context:'Tea is tracked in packs. There are 18 packs in stock.',expected:'Match Tea and review 18 + 2 = 20 packs.',file:'/voice-samples/04-hindi-receipt.wav'},
+ {id:'stock-correction',title:'Correct the total count',language:'en-IN',prompt:'I counted all the rice. Set the total rice stock to twenty kilograms.',context:'Rice currently has 45 kg in stock.',expected:'Set the total to 20 kg; do not add another 20 kg.',file:'/voice-samples/05-stock-correction.wav'},
+] as const;
+export type VoiceSampleId=typeof voiceSamples[number]['id'];

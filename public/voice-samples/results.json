@@ -1,0 +1,705 @@
+{
+  "generatedAt": "2026-10-11T14:38:39.467Z",
+  "provider": "sarvam",
+  "ttsModel": "bulbul:v3",
+  "sttModel": "saaras:v3",
+  "sandbox": true,
+  "results": [
+    {
+      "sampleId": "new-cartons",
+      "mode": "text",
+      "prompt": "I just acquired ten cartons of Maggi. Add them to my inventory.",
+      "passed": true,
+      "chatMs": 778,
+      "status": "needs_input",
+      "reply": "How many individual packs or pieces are in one carton of Maggi? Tell me the number and the unit, for example “24 packs per carton”.",
+      "draft": {
+        "id": "ff758f5c-3ed9-4d75-ac64-b3aa3a8731c9",
+        "request": {
+          "type": "inventory",
+          "mode": "add",
+          "item": "Maggi",
+          "quantity": 10,
+          "unit": "cartons"
+        },
+        "question": "How many individual packs or pieces are in one carton of Maggi? Tell me the number and the unit, for example “24 packs per carton”.",
+        "missing": [
+          "baseUnit",
+          "unitsPerPack"
+        ],
+        "updatedAt": "2026-10-11T14:38:40.314Z"
+      },
+      "noMutationBeforeConfirmation": true,
+      "finalInventory": [
+        {
+          "item": "Rice",
+          "quantity": 45,
+          "unit": "kg",
+          "price": 60
+        },
+        {
+          "item": "Tea",
+          "quantity": 18,
+          "unit": "packs",
+          "price": 30
+        },
+        {
+          "item": "KitKat",
+          "quantity": 5,
+          "unit": "boxes",
+          "price": 100
+        }
+      ],
+      "totalMs": 779
+    },
+    {
+      "sampleId": "new-cartons",
+      "mode": "voice",
+      "prompt": "I just acquired ten cartons of Maggi. Add them to my inventory.",
+      "passed": true,
+      "transcriptionMs": 826,
+      "transcript": "I just acquire 10 cartons of Maggi, add them to my inventory.",
+      "chatMs": 524,
+      "status": "needs_input",
+      "reply": "How many individual packs or pieces are in one carton of Maggi? Tell me the number and the unit, for example “24 packs per carton”.",
+      "draft": {
+        "id": "83bd6805-4cd3-489d-a81e-243883e6ad7d",
+        "request": {
+          "type": "inventory",
+          "mode": "add",
+          "item": "Maggi",
+          "quantity": 10,
+          "unit": "cartons"
+        },
+        "question": "How many individual packs or pieces are in one carton of Maggi? Tell me the number and the unit, for example “24 packs per carton”.",
+        "missing": [
+          "baseUnit",
+          "unitsPerPack"
+        ],
+        "updatedAt": "2026-10-11T14:38:41.677Z"
+      },
+      "noMutationBeforeConfirmation": true,
+      "finalInventory": [
+        {
+          "item": "Rice",
+          "quantity": 45,
+          "unit": "kg",
+          "price": 60
+        },
+        {
+          "item": "Tea",
+          "quantity": 18,
+          "unit": "packs",
+          "price": 30
+        },
+        {
+          "item": "KitKat",
+          "quantity": 5,
+          "unit": "boxes",
+          "price": 100
+        }
+      ],
+      "totalMs": 1353
+    },
+    {
+      "sampleId": "pack-size",
+      "mode": "text",
+      "prompt": "Each carton contains twenty four packs.",
+      "passed": true,
+      "chatMs": 648,
+      "status": "pending",
+      "reply": "Please review this change. Say “confirm” or tap Confirm & save. Nothing has been saved yet. Receive 10 cartons of Maggi. Packaging: 1 carton = 24 packs. After confirmation: 240 packs.",
+      "action": {
+        "type": "inventory",
+        "mode": "add",
+        "item": "Maggi",
+        "quantity": 10,
+        "unit": "cartons",
+        "baseUnit": "packs",
+        "unitsPerPack": 24
+      },
+      "review": {
+        "summary": "Receive 10 cartons of Maggi",
+        "basis": "null",
+        "lines": [
+          {
+            "label": "Item",
+            "value": "Maggi"
+          },
+          {
+            "label": "Current stock",
+            "value": "0 packs"
+          },
+          {
+            "label": "Packaging",
+            "value": "1 carton = 24 packs"
+          },
+          {
+            "label": "Received",
+            "value": "10 cartons"
+          },
+          {
+            "label": "After confirmation",
+            "value": "240 packs"
+          },
+          {
+            "label": "Selling price",
+            "value": "Not set · add later"
+          }
+        ]
+      },
+      "noMutationBeforeConfirmation": true,
+      "confirmationStatus": "saved",
+      "finalInventory": [
+        {
+          "item": "Rice",
+          "quantity": 45,
+          "unit": "kg",
+          "price": 60
+        },
+        {
+          "item": "Tea",
+          "quantity": 18,
+          "unit": "packs",
+          "price": 30
+        },
+        {
+          "item": "KitKat",
+          "quantity": 5,
+          "unit": "boxes",
+          "price": 100
+        },
+        {
+          "item": "Maggi",
+          "quantity": 240,
+          "unit": "packs",
+          "price": null,
+          "packaging": [
+            {
+              "unit": "cartons",
+              "unitsPerPack": 24
+            }
+          ]
+        }
+      ],
+      "totalMs": 739
+    },
+    {
+      "sampleId": "pack-size",
+      "mode": "voice",
+      "prompt": "Each carton contains twenty four packs.",
+      "passed": true,
+      "transcriptionMs": 236,
+      "transcript": "Each carton contains 24 packs.",
+      "chatMs": 696,
+      "status": "pending",
+      "reply": "Please review this change. Say “confirm” or tap Confirm & save. Nothing has been saved yet. Receive 10 cartons of Maggi. Packaging: 1 carton = 24 packs. After confirmation: 240 packs.",
+      "action": {
+        "type": "inventory",
+        "mode": "add",
+        "item": "Maggi",
+        "quantity": 10,
+        "unit": "cartons",
+        "baseUnit": "packs",
+        "unitsPerPack": 24
+      },
+      "review": {
+        "summary": "Receive 10 cartons of Maggi",
+        "basis": "null",
+        "lines": [
+          {
+            "label": "Item",
+            "value": "Maggi"
+          },
+          {
+            "label": "Current stock",
+            "value": "0 packs"
+          },
+          {
+            "label": "Packaging",
+            "value": "1 carton = 24 packs"
+          },
+          {
+            "label": "Received",
+            "value": "10 cartons"
+          },
+          {
+            "label": "After confirmation",
+            "value": "240 packs"
+          },
+          {
+            "label": "Selling price",
+            "value": "Not set · add later"
+          }
+        ]
+      },
+      "noMutationBeforeConfirmation": true,
+      "confirmationStatus": "saved",
+      "finalInventory": [
+        {
+          "item": "Rice",
+          "quantity": 45,
+          "unit": "kg",
+          "price": 60
+        },
+        {
+          "item": "Tea",
+          "quantity": 18,
+          "unit": "packs",
+          "price": 30
+        },
+        {
+          "item": "KitKat",
+          "quantity": 5,
+          "unit": "boxes",
+          "price": 100
+        },
+        {
+          "item": "Maggi",
+          "quantity": 240,
+          "unit": "packs",
+          "price": null,
+          "packaging": [
+            {
+              "unit": "cartons",
+              "unitsPerPack": 24
+            }
+          ]
+        }
+      ],
+      "totalMs": 944
+    },
+    {
+      "sampleId": "existing-boxes",
+      "mode": "text",
+      "prompt": "I bought five more boxes of KitKat. Add them to the existing stock.",
+      "passed": true,
+      "chatMs": 478,
+      "status": "pending",
+      "reply": "Please review this change. Say “confirm” or tap Confirm & save. Nothing has been saved yet. Receive 5 boxes of KitKat. After confirmation: 10 boxes.",
+      "action": {
+        "type": "inventory",
+        "mode": "add",
+        "item": "KitKat",
+        "quantity": 5,
+        "unit": "boxes",
+        "baseUnit": "boxes"
+      },
+      "review": {
+        "summary": "Receive 5 boxes of KitKat",
+        "basis": "{\"item\":\"KitKat\",\"quantity\":5,\"unit\":\"boxes\",\"price\":100}",
+        "lines": [
+          {
+            "label": "Item",
+            "value": "KitKat"
+          },
+          {
+            "label": "Current stock",
+            "value": "5 boxes"
+          },
+          {
+            "label": "Received",
+            "value": "5 boxes"
+          },
+          {
+            "label": "After confirmation",
+            "value": "10 boxes"
+          },
+          {
+            "label": "Selling price",
+            "value": "₹100 / boxes"
+          }
+        ]
+      },
+      "noMutationBeforeConfirmation": true,
+      "confirmationStatus": "saved",
+      "finalInventory": [
+        {
+          "item": "Rice",
+          "quantity": 45,
+          "unit": "kg",
+          "price": 60
+        },
+        {
+          "item": "Tea",
+          "quantity": 18,
+          "unit": "packs",
+          "price": 30
+        },
+        {
+          "item": "KitKat",
+          "quantity": 10,
+          "unit": "boxes",
+          "price": 100,
+          "packaging": []
+        }
+      ],
+      "totalMs": 555
+    },
+    {
+      "sampleId": "existing-boxes",
+      "mode": "voice",
+      "prompt": "I bought five more boxes of KitKat. Add them to the existing stock.",
+      "passed": true,
+      "transcriptionMs": 339,
+      "transcript": "I bought 5 more boxes of KitKat, add them to the existing stock.",
+      "chatMs": 564,
+      "status": "pending",
+      "reply": "Please review this change. Say “confirm” or tap Confirm & save. Nothing has been saved yet. Receive 5 boxes of KitKat. After confirmation: 10 boxes.",
+      "action": {
+        "type": "inventory",
+        "mode": "add",
+        "item": "KitKat",
+        "quantity": 5,
+        "unit": "boxes",
+        "baseUnit": "boxes"
+      },
+      "review": {
+        "summary": "Receive 5 boxes of KitKat",
+        "basis": "{\"item\":\"KitKat\",\"quantity\":5,\"unit\":\"boxes\",\"price\":100}",
+        "lines": [
+          {
+            "label": "Item",
+            "value": "KitKat"
+          },
+          {
+            "label": "Current stock",
+            "value": "5 boxes"
+          },
+          {
+            "label": "Received",
+            "value": "5 boxes"
+          },
+          {
+            "label": "After confirmation",
+            "value": "10 boxes"
+          },
+          {
+            "label": "Selling price",
+            "value": "₹100 / boxes"
+          }
+        ]
+      },
+      "noMutationBeforeConfirmation": true,
+      "confirmationStatus": "saved",
+      "finalInventory": [
+        {
+          "item": "Rice",
+          "quantity": 45,
+          "unit": "kg",
+          "price": 60
+        },
+        {
+          "item": "Tea",
+          "quantity": 18,
+          "unit": "packs",
+          "price": 30
+        },
+        {
+          "item": "KitKat",
+          "quantity": 10,
+          "unit": "boxes",
+          "price": 100,
+          "packaging": []
+        }
+      ],
+      "totalMs": 926
+    },
+    {
+      "sampleId": "hindi-receipt",
+      "mode": "text",
+      "prompt": "चाय के दो पैकेट और आए हैं। इन्हें स्टॉक में जोड़ दो।",
+      "passed": true,
+      "chatMs": 477,
+      "status": "pending",
+      "reply": "यह बदलाव जाँच लें। “कन्फर्म” कहें या Confirm & save दबाएँ। अभी कुछ सेव नहीं हुआ है। Receive 2 packs of Tea. After confirmation: 20 packs.",
+      "action": {
+        "type": "inventory",
+        "mode": "add",
+        "item": "Tea",
+        "quantity": 2,
+        "unit": "packs",
+        "baseUnit": "packs"
+      },
+      "review": {
+        "summary": "Receive 2 packs of Tea",
+        "basis": "{\"item\":\"Tea\",\"quantity\":18,\"unit\":\"packs\",\"price\":30}",
+        "lines": [
+          {
+            "label": "Item",
+            "value": "Tea"
+          },
+          {
+            "label": "Current stock",
+            "value": "18 packs"
+          },
+          {
+            "label": "Received",
+            "value": "2 packs"
+          },
+          {
+            "label": "After confirmation",
+            "value": "20 packs"
+          },
+          {
+            "label": "Selling price",
+            "value": "₹30 / packs"
+          }
+        ]
+      },
+      "noMutationBeforeConfirmation": true,
+      "confirmationStatus": "saved",
+      "finalInventory": [
+        {
+          "item": "Rice",
+          "quantity": 45,
+          "unit": "kg",
+          "price": 60
+        },
+        {
+          "item": "Tea",
+          "quantity": 20,
+          "unit": "packs",
+          "price": 30,
+          "packaging": []
+        },
+        {
+          "item": "KitKat",
+          "quantity": 5,
+          "unit": "boxes",
+          "price": 100
+        }
+      ],
+      "totalMs": 547
+    },
+    {
+      "sampleId": "hindi-receipt",
+      "mode": "voice",
+      "prompt": "चाय के दो पैकेट और आए हैं। इन्हें स्टॉक में जोड़ दो।",
+      "passed": true,
+      "transcriptionMs": 400,
+      "transcript": "चाय के दो पैकेट और आए हैं, इन्हें स्टॉक में जोड़ दो।",
+      "chatMs": 533,
+      "status": "pending",
+      "reply": "यह बदलाव जाँच लें। “कन्फर्म” कहें या Confirm & save दबाएँ। अभी कुछ सेव नहीं हुआ है। Receive 2 packs of Tea. After confirmation: 20 packs.",
+      "action": {
+        "type": "inventory",
+        "mode": "add",
+        "item": "Tea",
+        "quantity": 2,
+        "unit": "packs",
+        "baseUnit": "packs"
+      },
+      "review": {
+        "summary": "Receive 2 packs of Tea",
+        "basis": "{\"item\":\"Tea\",\"quantity\":18,\"unit\":\"packs\",\"price\":30}",
+        "lines": [
+          {
+            "label": "Item",
+            "value": "Tea"
+          },
+          {
+            "label": "Current stock",
+            "value": "18 packs"
+          },
+          {
+            "label": "Received",
+            "value": "2 packs"
+          },
+          {
+            "label": "After confirmation",
+            "value": "20 packs"
+          },
+          {
+            "label": "Selling price",
+            "value": "₹30 / packs"
+          }
+        ]
+      },
+      "noMutationBeforeConfirmation": true,
+      "confirmationStatus": "saved",
+      "finalInventory": [
+        {
+          "item": "Rice",
+          "quantity": 45,
+          "unit": "kg",
+          "price": 60
+        },
+        {
+          "item": "Tea",
+          "quantity": 20,
+          "unit": "packs",
+          "price": 30,
+          "packaging": []
+        },
+        {
+          "item": "KitKat",
+          "quantity": 5,
+          "unit": "boxes",
+          "price": 100
+        }
+      ],
+      "totalMs": 950
+    },
+    {
+      "sampleId": "stock-correction",
+      "mode": "text",
+      "prompt": "I counted all the rice. Set the total rice stock to twenty kilograms.",
+      "passed": true,
+      "chatMs": 504,
+      "status": "pending",
+      "reply": "Please review this change. Say “confirm” or tap Confirm & save. Nothing has been saved yet. Set total to 20 kg of Rice. After confirmation: 20 kg.",
+      "action": {
+        "type": "inventory",
+        "mode": "set",
+        "item": "Rice",
+        "quantity": 20,
+        "unit": "kg",
+        "baseUnit": "kg"
+      },
+      "review": {
+        "summary": "Set total to 20 kg of Rice",
+        "basis": "{\"item\":\"Rice\",\"quantity\":45,\"unit\":\"kg\",\"price\":60}",
+        "lines": [
+          {
+            "label": "Item",
+            "value": "Rice"
+          },
+          {
+            "label": "Current stock",
+            "value": "45 kg"
+          },
+          {
+            "label": "Set total",
+            "value": "20 kg"
+          },
+          {
+            "label": "After confirmation",
+            "value": "20 kg"
+          },
+          {
+            "label": "Selling price",
+            "value": "₹60 / kg"
+          }
+        ]
+      },
+      "noMutationBeforeConfirmation": true,
+      "confirmationStatus": "saved",
+      "finalInventory": [
+        {
+          "item": "Rice",
+          "quantity": 20,
+          "unit": "kg",
+          "price": 60,
+          "packaging": []
+        },
+        {
+          "item": "Tea",
+          "quantity": 18,
+          "unit": "packs",
+          "price": 30
+        },
+        {
+          "item": "KitKat",
+          "quantity": 5,
+          "unit": "boxes",
+          "price": 100
+        }
+      ],
+      "totalMs": 585
+    },
+    {
+      "sampleId": "stock-correction",
+      "mode": "voice",
+      "prompt": "I counted all the rice. Set the total rice stock to twenty kilograms.",
+      "passed": true,
+      "transcriptionMs": 432,
+      "transcript": "I counted all the rice, set the total rice stock to 20 kilograms.",
+      "chatMs": 583,
+      "status": "pending",
+      "reply": "Please review this change. Say “confirm” or tap Confirm & save. Nothing has been saved yet. Set total to 20 kg of Rice. After confirmation: 20 kg.",
+      "action": {
+        "type": "inventory",
+        "mode": "set",
+        "item": "Rice",
+        "quantity": 20,
+        "unit": "kg",
+        "baseUnit": "kg"
+      },
+      "review": {
+        "summary": "Set total to 20 kg of Rice",
+        "basis": "{\"item\":\"Rice\",\"quantity\":45,\"unit\":\"kg\",\"price\":60}",
+        "lines": [
+          {
+            "label": "Item",
+            "value": "Rice"
+          },
+          {
+            "label": "Current stock",
+            "value": "45 kg"
+          },
+          {
+            "label": "Set total",
+            "value": "20 kg"
+          },
+          {
+            "label": "After confirmation",
+            "value": "20 kg"
+          },
+          {
+            "label": "Selling price",
+            "value": "₹60 / kg"
+          }
+        ]
+      },
+      "noMutationBeforeConfirmation": true,
+      "confirmationStatus": "saved",
+      "finalInventory": [
+        {
+          "item": "Rice",
+          "quantity": 20,
+          "unit": "kg",
+          "price": 60,
+          "packaging": []
+        },
+        {
+          "item": "Tea",
+          "quantity": 18,
+          "unit": "packs",
+          "price": 30
+        },
+        {
+          "item": "KitKat",
+          "quantity": 5,
+          "unit": "boxes",
+          "price": 100
+        }
+      ],
+      "totalMs": 1034
+    }
+  ],
+  "comparisons": [
+    {
+      "sampleId": "new-cartons",
+      "passed": true
+    },
+    {
+      "sampleId": "pack-size",
+      "passed": true
+    },
+    {
+      "sampleId": "existing-boxes",
+      "passed": true
+    },
+    {
+      "sampleId": "hindi-receipt",
+      "passed": true
+    },
+    {
+      "sampleId": "stock-correction",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "completedAt": "2026-10-11T14:38:47.976Z"
+}
